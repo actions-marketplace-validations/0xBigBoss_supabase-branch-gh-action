@@ -20,6 +20,7 @@ Basic usage:
   with:
     supabase-access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     supabase-project-id: ${{ secrets.SUPABASE_PROJECT_ID }}
+    git-branch: "sb-preview-branch" # Optional
     wait-for-migrations: true # Optional. Default is false.
     timeout: 60 # Optional. Default is 60.
 - name: Get result

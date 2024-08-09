@@ -7,6 +7,7 @@ main().catch(handleError);
 export async function main(): Promise<void> {
 	const sbToken = core.getInput("supabase-access-token", { required: true });
 	const sbRef = core.getInput("supabase-project-id", { required: true });
+	let branchName = core.getInput("git-branch") || process.env.GITHUB_HEAD_REF;
 	const waitForMigrations = core.getBooleanInput("wait-for-migrations");
 	const timeout = Number(core.getInput("timeout")); // timeout in seconds
 
@@ -33,11 +34,9 @@ export async function main(): Promise<void> {
 		BASE: "https://api.supabase.com",
 	});
 
-	// find branch name
-	let branchName = process.env.GITHUB_HEAD_REF; // default to GITHUB_HEAD_REF if available (for PRs)
 	if (!branchName) {
 		// if not available, try to get it from GITHUB_REF
-		branchName = (process.env.GITHUB_REF ?? "").split("refs/heads/")[1];
+		branchName = (process.env.GITHUB_REF || "").split("refs/heads/")[1];
 	}
 
 	if (!branchName) {
@@ -66,10 +65,11 @@ export async function main(): Promise<void> {
 				throw _err;
 			});
 		const currentBranch = branches.find((b) => b.name === branchName);
-		if (
-			currentBranch &&
-			(!waitForMigrations || currentBranch.status === "MIGRATIONS_PASSED")
-		) {
+		const isStatusOk =
+			currentBranch?.status === "MIGRATIONS_PASSED" ||
+			//@ts-ignore
+			currentBranch?.status === "FUNCTIONS_DEPLOYED";
+		if (currentBranch && (!waitForMigrations || isStatusOk)) {
 			const branchDetails = await supabase.databaseBranchesBeta
 				.getBranchDetails({
 					branchId: currentBranch.id,

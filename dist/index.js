@@ -19376,6 +19376,7 @@ var core = __toESM(require_core(), 1);
 async function main() {
   const sbToken = core.getInput("supabase-access-token", { required: true });
   const sbRef = core.getInput("supabase-project-id", { required: true });
+  let branchName = core.getInput("git-branch") || process.env.GITHUB_HEAD_REF;
   const waitForMigrations = core.getBooleanInput("wait-for-migrations");
   const timeout = Number(core.getInput("timeout"));
   core.setSecret(sbToken);
@@ -19396,9 +19397,8 @@ async function main() {
     TOKEN: sbToken,
     BASE: "https://api.supabase.com"
   });
-  let branchName = process.env.GITHUB_HEAD_REF;
   if (!branchName) {
-    branchName = (process.env.GITHUB_REF ?? "").split("refs/heads/")[1];
+    branchName = (process.env.GITHUB_REF || "").split("refs/heads/")[1];
   }
   if (!branchName) {
     core.setFailed("Git branch not found");
@@ -19419,7 +19419,8 @@ async function main() {
       throw _err;
     });
     const currentBranch = branches.find((b) => b.name === branchName);
-    if (currentBranch && (!waitForMigrations || currentBranch.status === "MIGRATIONS_PASSED")) {
+    const isStatusOk = currentBranch?.status === "MIGRATIONS_PASSED" || currentBranch?.status === "FUNCTIONS_DEPLOYED";
+    if (currentBranch && (!waitForMigrations || isStatusOk)) {
       const branchDetails = await supabase.databaseBranchesBeta.getBranchDetails({
         branchId: currentBranch.id
       }).catch((err) => {

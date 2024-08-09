@@ -11,6 +11,9 @@ inputs:
   supabase-project-id:
     description: The Supabase Project ID with database branching enabled.
     required: true
+  git-branch:
+    description: The name of the Github branch to wait for.
+    required: false
   wait-for-migrations:
     description: Whether to wait for migrations to be applied before returning the branch.
     default: "false"
