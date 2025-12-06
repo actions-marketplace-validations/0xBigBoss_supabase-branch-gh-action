@@ -11,6 +11,9 @@ inputs:
   supabase-project-id:
     description: The Supabase Project ID with database branching enabled.
     required: true
+  git-branch:
+    description: The name of the Github branch to wait for.
+    required: false
   wait-for-migrations:
     description: Whether to wait for migrations to be applied before returning the branch.
     default: "false"
@@ -54,6 +57,10 @@ outputs:
     description: The DB password of the branch.
   jwt_secret:
     description: The JWT secret of the branch.
+  anon_key:
+    description: The anon key of the branch.
+  service_role_key:
+    description: The service role key of the branch.
 runs:
   using: node20
   main: dist/index.js

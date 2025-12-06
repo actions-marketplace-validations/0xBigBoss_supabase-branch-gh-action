@@ -19376,6 +19376,7 @@ var core = __toESM(require_core(), 1);
 async function main() {
   const sbToken = core.getInput("supabase-access-token", { required: true });
   const sbRef = core.getInput("supabase-project-id", { required: true });
+  let branchName = core.getInput("git-branch") || process.env.GITHUB_HEAD_REF;
   const waitForMigrations = core.getBooleanInput("wait-for-migrations");
   const timeout = Number(core.getInput("timeout"));
   core.setSecret(sbToken);
@@ -19396,9 +19397,8 @@ async function main() {
     TOKEN: sbToken,
     BASE: "https://api.supabase.com"
   });
-  let branchName = process.env.GITHUB_HEAD_REF;
   if (!branchName) {
-    branchName = (process.env.GITHUB_REF ?? "").split("refs/heads/")[1];
+    branchName = (process.env.GITHUB_REF || "").split("refs/heads/")[1];
   }
   if (!branchName) {
     core.setFailed("Git branch not found");
@@ -19419,7 +19419,8 @@ async function main() {
       throw _err;
     });
     const currentBranch = branches.find((b) => b.name === branchName);
-    if (currentBranch && (!waitForMigrations || currentBranch.status === "MIGRATIONS_PASSED")) {
+    const isStatusOk = currentBranch?.status === "MIGRATIONS_PASSED" || currentBranch?.status === "FUNCTIONS_DEPLOYED";
+    if (currentBranch && (!waitForMigrations || isStatusOk)) {
       const branchDetails = await supabase.databaseBranchesBeta.getBranchDetails({
         branchId: currentBranch.id
       }).catch((err) => {
@@ -19434,6 +19435,25 @@ async function main() {
       if (!branchDetails) {
         core.warning("Branch details not found");
         continue;
+      }
+      const apiKeys = await supabase.projects.getProjectApiKeys({
+        ref: currentBranch.project_ref
+      }).catch((err) => {
+        if (err.status === 429 || err.status >= 500) {
+          core.warning(`Error fetching api keys: ${err}`);
+          return null;
+        }
+        const _err = new Error("Error fetching api keys");
+        _err.cause = err;
+        throw _err;
+      });
+      if (!apiKeys) {
+        core.warning("Api keys not found");
+        continue;
+      }
+      for (const key of apiKeys) {
+        core.setSecret(key.api_key);
+        core.setOutput(`${key.name}_key`, key.api_key);
       }
       const branchKeys = [
         "id",
@@ -19487,3 +19507,6 @@ var handleError = function(err) {
 };
 process.on("unhandledRejection", handleError);
 main().catch(handleError);
+export {
+  main
+};

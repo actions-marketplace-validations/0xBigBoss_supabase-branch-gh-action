@@ -20,6 +20,7 @@ Basic usage:
   with:
     supabase-access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     supabase-project-id: ${{ secrets.SUPABASE_PROJECT_ID }}
+    git-branch: "sb-preview-branch" # Optional
     wait-for-migrations: true # Optional. Default is false.
     timeout: 60 # Optional. Default is 60.
 - name: Get result
@@ -32,6 +33,8 @@ Basic usage:
     echo "db_user=${{steps.supabase-branch.outputs.db_user}}"
     echo "db_password=${{steps.supabase-branch.outputs.db_password}}"
     echo "jwt_secret=${{steps.supabase-branch.outputs.jwt_secret}}"
+    echo "anon_key=${{steps.supabase-branch.outputs.anon_key}}"
+    echo "service_role_key=${{steps.supabase-branch.outputs.service_role_key}}"
 ```
 
 ## Contributing
